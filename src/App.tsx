@@ -1,25 +1,48 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import styled from "styled-components";
+import "./App.css";
+import Grid from "./components/Grid";
+import { GameContext } from "./GameContext";
+import { Player, Space } from "./types";
+
+const Container = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
 
 function App() {
+  const [spaces, setSpaces] = useState<Space[]>([
+    { index: 0 },
+    { index: 1 },
+    { index: 2 },
+    { index: 3 },
+    { index: 4 },
+    { index: 5 },
+    { index: 6 },
+    { index: 7 },
+    { index: 8 },
+  ]);
+  const players: Player[] = [{ mark: "X" }, { mark: "O" }];
+  const [currentPlayer, setCurrentPlayer] = useState<Player>(players[0]);
+
+  const setSpace = (index: number) => {
+    const newSpaces = [...spaces];
+    newSpaces[index].mark = currentPlayer.mark;
+
+    const nextPlayer =
+      currentPlayer.mark === players[0].mark ? players[1] : players[0];
+
+    setSpaces(newSpaces);
+    setCurrentPlayer(nextPlayer);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container>
+      <GameContext.Provider value={{ spaces, setSpace }}>
+        <Grid />
+      </GameContext.Provider>
+    </Container>
   );
 }
 
