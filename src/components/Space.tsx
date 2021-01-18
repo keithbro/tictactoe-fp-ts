@@ -4,13 +4,13 @@ import { GameContext } from "../GameContext";
 import { Space } from "../types";
 
 const Box = styled.div`
-  border: 1px solid black;
-  width: 50px;
-  height: 50px;
-  user-select: none;
-  display: flex;
   align-items: center;
+  border: 1px solid black;
+  display: flex;
+  height: 50px;
   justify-content: center;
+  user-select: none;
+  width: 50px;
 `;
 
 export default function SpaceComponent({ space }: { space: Space }) {

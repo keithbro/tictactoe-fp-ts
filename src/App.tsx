@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import "./App.css";
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
 import { Player, Space } from "./types";
 
 const Container = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   justify-content: center;
 `;
 
