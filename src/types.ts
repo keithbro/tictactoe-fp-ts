@@ -1,9 +1,9 @@
-export enum Mark {
+export enum Player {
   X = "X",
   O = "O",
 }
 
-export type Space = Mark | undefined;
+export type Space = Player | undefined;
 
 export type Spaces = [
   Space,
@@ -16,7 +16,3 @@ export type Spaces = [
   Space,
   Space
 ];
-
-export type Player = {
-  mark: Mark;
-};

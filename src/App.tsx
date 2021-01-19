@@ -7,7 +7,7 @@ import { uniq } from "lodash";
 
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
-import { Player, Spaces, Mark } from "./types";
+import { Spaces, Player } from "./types";
 import { findMap } from "./util";
 
 const Container = styled.div`
@@ -32,9 +32,6 @@ type TakeTurnResult = {
   spaces: Spaces;
   winner?: Player;
 };
-
-const playerOne: Player = { mark: Mark.X };
-const playerTwo: Player = { mark: Mark.O };
 
 interface IValidateUnoccupied {
   (index: number): E.Either<SpaceAlreadyOccupiedError, number>;
@@ -67,7 +64,7 @@ const updateSpaces = (spaces: Spaces, currentPlayer: Player): IUpdateSpaces => (
 ) => {
   return [
     ...spaces.slice(0, index),
-    currentPlayer.mark,
+    currentPlayer,
     ...spaces.slice(index + 1),
   ] as Spaces;
 };
@@ -84,19 +81,15 @@ const checkForWinner = (allSpaces: Spaces): O.Option<Player> => {
     [6, 7, 8],
   ];
 
-  const winningMark = findMap(allWinningIndices, (indicies) => {
+  const winner = findMap(allWinningIndices, (indicies) => {
     const spaces = indicies.map((i) => allSpaces[i]);
     if (spaces.includes(undefined)) return;
 
-    const uniqueSpaces = uniq(spaces);
+    const uniqueSpaces = uniq(spaces) as Player[];
     if (uniqueSpaces.length === 1) return uniqueSpaces[0];
-  }) as Mark;
+  });
 
-  if (!winningMark) return O.none;
-
-  const player = winningMark === Mark.X ? playerOne : playerTwo;
-
-  return O.some(player);
+  return O.fromNullable(winner);
 };
 
 const markSpace = (spaces: Spaces, currentPlayer: Player): IMarkSpace => (
@@ -113,8 +106,8 @@ const getNextPlayer = (
   spaces: Spaces
 ): O.Option<Player> => {
   if (!spaces.includes(undefined)) return O.none;
-  if (currentPlayer === playerOne) return O.some(playerTwo);
-  return O.some(playerOne);
+
+  return O.some(currentPlayer === Player.X ? Player.O : Player.X);
 };
 
 const getStatus = (currentPlayer: Player): IGetStatus => (spaces: Spaces) => {
@@ -143,12 +136,12 @@ function App() {
   const [spaces, setSpaces] = useState<Spaces>(emptySpaces);
 
   const [currentPlayer, setCurrentPlayer] = useState<Player | undefined>(
-    playerOne
+    Player.X
   );
   const [winner, setWinner] = useState<Player | undefined>();
 
   const restart = () => {
-    setCurrentPlayer(playerOne);
+    setCurrentPlayer(Player.X);
     setSpaces(emptySpaces);
     setWinner(undefined);
   };
@@ -173,8 +166,8 @@ function App() {
       <GameContext.Provider value={{ spaces, setSpace }}>
         <Grid />
         <Info>
-          {currentPlayer && `Player Turn: ${currentPlayer.mark}`}
-          {winner && `Winner: ${winner.mark}`}
+          {currentPlayer && `Player Turn: ${currentPlayer}`}
+          {winner && `Winner: ${winner}`}
           <div>
             <button onClick={restart}>Restart</button>
           </div>
