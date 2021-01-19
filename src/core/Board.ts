@@ -2,9 +2,10 @@ import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
+import { eqString } from "fp-ts/lib/Eq";
+
 import { Player } from "./Player";
 import * as Space from "./Space";
-import { eqString } from "fp-ts/lib/Eq";
 
 export type Spaces = [
   Space.Space,
@@ -33,7 +34,18 @@ export const markSpace = (board: Board, player: Player) => (
 ): E.Either<Error, Board> =>
   pipe(index, validateUnoccupied(board), E.map(update(board, player)));
 
-const update = (board: Board, player: Player) => (index: number) => {
+const allWinningIndices = [
+  [0, 1, 2],
+  [0, 3, 6],
+  [0, 4, 8],
+  [1, 4, 7],
+  [2, 4, 6],
+  [2, 5, 8],
+  [3, 4, 5],
+  [6, 7, 8],
+];
+
+const update = (board: Board, player: Player) => (index: number): Board => {
   return {
     spaces: [
       ...board.spaces.slice(0, index),
@@ -43,20 +55,8 @@ const update = (board: Board, player: Player) => (index: number) => {
   };
 };
 
-export const checkForWinner = (board: Board): O.Option<Player> => {
-  const allWinningIndices = [
-    [0, 1, 2],
-    [0, 3, 6],
-    [0, 4, 8],
-    [1, 4, 7],
-    [2, 4, 6],
-    [2, 5, 8],
-    [3, 4, 5],
-    [6, 7, 8],
-  ];
-
-  return pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
-};
+export const checkForWinner = (board: Board): O.Option<Player> =>
+  pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
 
 const checkForWinnerSingle = (board: Board) => (
   indicies: number[]
@@ -72,7 +72,9 @@ const checkForWinnerSingle = (board: Board) => (
   return O.none;
 };
 
-const validateUnoccupied = (board: Board) => (index: number) => {
+const validateUnoccupied = (board: Board) => (
+  index: number
+): E.Either<Error, number> => {
   const space = board.spaces[index];
 
   return space.mark

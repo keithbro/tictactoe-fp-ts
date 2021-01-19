@@ -1,9 +1,10 @@
-import * as Board from "./Board";
-import * as Player from "./Player";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
-import { Mark } from "../types";
 import { pipe } from "fp-ts/lib/function";
+
+import * as Board from "./Board";
+import * as Player from "./Player";
+import { Mark } from "../types";
 
 export type Game = {
   board: Board.Board;
@@ -49,7 +50,7 @@ const getNextPlayer = (game: Game): O.Option<Player.Player> => {
 
 const setupNewTurn = (game: Game) => (board: Board.Board): Game => {
   const winner = Board.checkForWinner(board);
-  console.log({ winner });
+
   if (O.isSome(winner))
     return {
       ...game,
