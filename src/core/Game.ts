@@ -11,7 +11,7 @@ export type Game = {
   currentPlayer: O.Option<Player.Player>;
   playerOne: Player.Player;
   playerTwo: Player.Player;
-  winner?: Player.Player;
+  winner: O.Option<Player.Player>;
 };
 
 export const build = (): Game => {
@@ -21,6 +21,7 @@ export const build = (): Game => {
 
   return {
     currentPlayer: O.some(playerOne),
+    winner: O.none,
     playerOne,
     playerTwo,
     board,
@@ -60,9 +61,14 @@ const setupNewTurn = (game: Game) => (board: Board.Board): Game => {
           ...game,
           board,
           currentPlayer: nextPlayer,
-          winner: undefined,
+          winner: O.none,
         })),
-      (winner) => ({ ...game, board, currentPlayer: O.none, winner })
+      (winner) => ({
+        ...game,
+        board,
+        currentPlayer: O.none,
+        winner: O.some(winner),
+      })
     )
   );
 };

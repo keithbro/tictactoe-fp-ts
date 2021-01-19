@@ -1,7 +1,10 @@
 import { useContext } from "react";
 import styled from "styled-components";
+import * as O from "fp-ts/lib/Option";
+
 import { Space } from "../core/Space";
 import { GameContext } from "../GameContext";
+import { pipe } from "fp-ts/lib/pipeable";
 
 type BoxProps = {
   available: boolean;
@@ -34,8 +37,8 @@ export default function SpaceComponent({
   const handleClick = () => takeTurn(index);
 
   return (
-    <Box onClick={handleClick} available={!space.mark}>
-      {space.mark}
+    <Box onClick={handleClick} available={O.isNone(space.mark)}>
+      {O.toNullable(space.mark)}
     </Box>
   );
 }

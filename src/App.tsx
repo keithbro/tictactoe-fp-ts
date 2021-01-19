@@ -7,6 +7,7 @@ import { pipe } from "fp-ts/lib/pipeable";
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
 import * as Game from "./core/Game";
+import { Player } from "./core/Player";
 
 const Container = styled.div`
   align-items: center;
@@ -22,6 +23,15 @@ const Info = styled.div`
   flex-direction: column;
   justify-content: center;
 `;
+
+const infoString = (player: O.Option<Player>, prefix: string) =>
+  pipe(
+    player,
+    O.fold(
+      () => null,
+      ({ mark }) => `${prefix}: ${mark}`
+    )
+  );
 
 function App() {
   const [game, setGame] = useState(() => Game.build());
@@ -42,9 +52,8 @@ function App() {
       <GameContext.Provider value={{ spaces: game.board.spaces, takeTurn }}>
         <Grid />
         <Info>
-          {O.isSome(game.currentPlayer) &&
-            `Player Turn: ${game.currentPlayer.value.mark}`}
-          {game.winner && `Winner: ${game.winner.mark}`}
+          {infoString(game.currentPlayer, `Player Turn`)}
+          {infoString(game.winner, `Winner`)}
           <div>
             <button onClick={restart}>Restart</button>
           </div>
