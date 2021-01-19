@@ -6,6 +6,7 @@ import { eqString } from "fp-ts/lib/Eq";
 
 import { Player } from "./Player";
 import * as Space from "./Space";
+import { Mark } from "../types";
 
 export type Spaces = [
   Space.Space,
@@ -58,18 +59,21 @@ const update = (board: Board, player: Player) => (index: number): Board => {
 export const checkForWinner = (board: Board): O.Option<Player> =>
   pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
 
-const checkForWinnerSingle = (board: Board) => (
-  indicies: number[]
-): O.Option<Player> => {
-  const marks = pipe(
-    indicies,
-    A.filterMap((i) => O.fromNullable(board.spaces[i].mark))
-  );
-
+const checkMarksForWinner = (marks: Mark[]): O.Option<Player> => {
   if (marks.length === 3 && A.uniq(eqString)(marks).length === 1)
     return O.some({ mark: marks[0] });
 
   return O.none;
+};
+
+const checkForWinnerSingle = (board: Board) => (
+  indicies: number[]
+): O.Option<Player> => {
+  return pipe(
+    indicies,
+    A.filterMap((i) => O.fromNullable(board.spaces[i].mark)),
+    checkMarksForWinner
+  );
 };
 
 const validateUnoccupied = (board: Board) => (
