@@ -25,7 +25,7 @@ export type Board = {
 };
 
 export const build = () => ({
-  spaces: new Array(9).fill(Space.build()) as Spaces,
+  spaces: A.makeBy(9, () => Space.build()) as Spaces,
 });
 
 class SpaceAlreadyOccupiedError extends Error {}
@@ -60,21 +60,23 @@ export const checkForWinner = (board: Board): O.Option<Player> =>
   pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
 
 const checkMarksForWinner = (marks: Mark[]): O.Option<Player> => {
-  if (marks.length === 3 && A.uniq(eqString)(marks).length === 1)
+  if (marksPresent(marks) === 3 && allMarksEqual(marks))
     return O.some({ mark: marks[0] });
 
   return O.none;
 };
 
+const getMarks = (board: Board) =>
+  A.filterMap<number, Mark>((i) => O.fromNullable(board.spaces[i].mark));
+
+const marksPresent = (marks: Mark[]): number => marks.length;
+
+const allMarksEqual = (marks: Mark[]): boolean =>
+  A.uniq(eqString)(marks).length === 1;
+
 const checkForWinnerSingle = (board: Board) => (
   indicies: number[]
-): O.Option<Player> => {
-  return pipe(
-    indicies,
-    A.filterMap((i) => O.fromNullable(board.spaces[i].mark)),
-    checkMarksForWinner
-  );
-};
+): O.Option<Player> => pipe(indicies, getMarks(board), checkMarksForWinner);
 
 const validateUnoccupied = (board: Board) => (
   index: number
