@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
-import { Player, Spaces, Mark } from "./types";
+import { Player, Spaces, Mark, Space } from "./types";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/function";
 
 const Container = styled.div`
   align-items: center;
@@ -27,21 +28,41 @@ type TakeTurnResult = {
 const playerOne: Player = { mark: Mark.X };
 const playerTwo: Player = { mark: Mark.O };
 
+interface IValidateUnoccupied {
+  (index: number): E.Either<SpaceAlreadyOccupiedError, number>;
+}
+
+interface IUpdateSpaces {
+  (index: number): Spaces;
+}
+
+const validateUnoccupied = (spaces: Spaces): IValidateUnoccupied => (
+  index: number
+) => {
+  const space = spaces[index];
+
+  return space
+    ? E.left(new SpaceAlreadyOccupiedError(`Space ${index} already occupied!`))
+    : E.right(index);
+};
+
+const updateSpaces = (spaces: Spaces, currentPlayer: Player): IUpdateSpaces => (
+  index: number
+) => {
+  spaces[index] = currentPlayer.mark;
+  return spaces;
+};
+
 const markSpace = (
   index: number,
   spaces: Spaces,
   currentPlayer: Player
-): E.Either<SpaceAlreadyOccupiedError, Spaces> => {
-  const space = spaces[index];
-  if (space)
-    return E.left(
-      new SpaceAlreadyOccupiedError(`Space ${index} already occupied!`)
-    );
-
-  spaces[index] = currentPlayer.mark;
-
-  return E.right(spaces);
-};
+): E.Either<SpaceAlreadyOccupiedError, Spaces> =>
+  pipe(
+    index,
+    validateUnoccupied(spaces),
+    E.map(updateSpaces(spaces, currentPlayer))
+  );
 
 const checkForWinner = (spaces: Spaces): O.Option<Player> => {
   console.log({ spaces });
