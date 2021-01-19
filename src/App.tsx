@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
-import { Player, Space } from "./types";
+import { Player, Spaces, Mark } from "./types";
+import { left, right, Either, isRight } from "fp-ts/lib/Either";
 
 const Container = styled.div`
   align-items: center;
@@ -10,30 +11,46 @@ const Container = styled.div`
   justify-content: center;
 `;
 
+class SpaceAlreadyOccupiedError extends Error {}
+
+type MarkSpaceResult = {
+  spaces: Spaces;
+  nextPlayer: Player;
+};
+
+const playerOne: Player = { mark: Mark.X };
+const playerTwo: Player = { mark: Mark.O };
+
+const markSpace = (
+  index: number,
+  spaces: Spaces,
+  currentPlayer: Player
+): Either<Error, MarkSpaceResult> => {
+  const space = spaces[index];
+  if (space) return left(new SpaceAlreadyOccupiedError());
+
+  const nextPlayer =
+    currentPlayer.mark === playerOne.mark ? playerTwo : playerOne;
+
+  spaces[index] = currentPlayer.mark;
+
+  return right({ spaces, nextPlayer });
+};
+
 function App() {
-  const [spaces, setSpaces] = useState<Space[]>([
-    { index: 0 },
-    { index: 1 },
-    { index: 2 },
-    { index: 3 },
-    { index: 4 },
-    { index: 5 },
-    { index: 6 },
-    { index: 7 },
-    { index: 8 },
-  ]);
-  const players: Player[] = [{ mark: "X" }, { mark: "O" }];
-  const [currentPlayer, setCurrentPlayer] = useState<Player>(players[0]);
+  const [spaces, setSpaces] = useState<Spaces>(
+    new Array(9).fill(undefined) as Spaces
+  );
+
+  const [currentPlayer, setCurrentPlayer] = useState<Player>(playerOne);
 
   const setSpace = (index: number) => {
-    const newSpaces = [...spaces];
-    newSpaces[index].mark = currentPlayer.mark;
+    const result = markSpace(index, spaces, currentPlayer);
 
-    const nextPlayer =
-      currentPlayer.mark === players[0].mark ? players[1] : players[0];
-
-    setSpaces(newSpaces);
-    setCurrentPlayer(nextPlayer);
+    if (isRight(result)) {
+      setSpaces(result.right.spaces);
+      setCurrentPlayer(result.right.nextPlayer);
+    }
   };
 
   return (

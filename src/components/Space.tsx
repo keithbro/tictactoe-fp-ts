@@ -13,10 +13,16 @@ const Box = styled.div`
   width: 50px;
 `;
 
-export default function SpaceComponent({ space }: { space: Space }) {
+export default function SpaceComponent({
+  space,
+  index,
+}: {
+  space: Space;
+  index: number;
+}) {
   const { setSpace } = useContext(GameContext)!;
 
-  const handleClick = () => setSpace(space.index);
+  const handleClick = () => setSpace(index);
 
-  return <Box onClick={handleClick}>{space.mark}</Box>;
+  return <Box onClick={handleClick}>{space}</Box>;
 }

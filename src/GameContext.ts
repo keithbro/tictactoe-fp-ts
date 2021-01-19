@@ -3,7 +3,7 @@ import { Space } from "./types";
 
 type ContextProps = {
   setSpace: (index: number) => void;
-  spaces: Space[];
+  spaces: Array<Space>;
 };
 
 export const GameContext = createContext<ContextProps | undefined>(undefined);

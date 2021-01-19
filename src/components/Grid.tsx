@@ -14,8 +14,8 @@ export default function Grid() {
 
   return (
     <StyledGrid>
-      {spaces.map((space) => (
-        <SpaceComponent key={space.index} space={space} />
+      {spaces.map((space, index) => (
+        <SpaceComponent key={index} space={space} index={index} />
       ))}
     </StyledGrid>
   );
