@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# Tic-tac-toe with fp-ts
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Learning [fp-ts](https://gcanti.github.io/fp-ts) via Tic-tac-toe.
 
 ## Available Scripts
 
