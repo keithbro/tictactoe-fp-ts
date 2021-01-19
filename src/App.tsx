@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import Grid from "./components/Grid";
-import { GameContext } from "./GameContext";
-import { Player, Spaces, Mark, Space } from "./types";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/function";
+import { uniq } from "lodash";
+
+import Grid from "./components/Grid";
+import { GameContext } from "./GameContext";
+import { Player, Spaces, Mark } from "./types";
+import { findMap } from "./util";
 
 const Container = styled.div`
   align-items: center;
@@ -15,14 +18,19 @@ const Container = styled.div`
 `;
 
 const Info = styled.div`
+  align-items: center;
   margin: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 class SpaceAlreadyOccupiedError extends Error {}
 
 type TakeTurnResult = {
-  spaces: Spaces;
   nextPlayer?: Player;
+  spaces: Spaces;
+  winner?: Player;
 };
 
 const playerOne: Player = { mark: Mark.X };
@@ -34,6 +42,14 @@ interface IValidateUnoccupied {
 
 interface IUpdateSpaces {
   (index: number): Spaces;
+}
+
+interface IMarkSpace {
+  (index: number): E.Either<SpaceAlreadyOccupiedError, Spaces>;
+}
+
+interface IGetStatus {
+  (spaces: Spaces): { nextPlayer?: Player; spaces: Spaces; winner?: Player };
 }
 
 const validateUnoccupied = (spaces: Spaces): IValidateUnoccupied => (
@@ -49,54 +65,97 @@ const validateUnoccupied = (spaces: Spaces): IValidateUnoccupied => (
 const updateSpaces = (spaces: Spaces, currentPlayer: Player): IUpdateSpaces => (
   index: number
 ) => {
-  spaces[index] = currentPlayer.mark;
-  return spaces;
+  return [
+    ...spaces.slice(0, index),
+    currentPlayer.mark,
+    ...spaces.slice(index + 1),
+  ] as Spaces;
 };
 
-const markSpace = (
-  index: number,
-  spaces: Spaces,
-  currentPlayer: Player
-): E.Either<SpaceAlreadyOccupiedError, Spaces> =>
+const checkForWinner = (allSpaces: Spaces): O.Option<Player> => {
+  const allWinningIndices = [
+    [0, 1, 2],
+    [0, 3, 6],
+    [0, 4, 7],
+    [1, 4, 7],
+    [2, 4, 6],
+    [2, 5, 8],
+    [3, 4, 5],
+    [6, 7, 8],
+  ];
+
+  const winningMark = findMap(allWinningIndices, (indicies) => {
+    const spaces = indicies.map((i) => allSpaces[i]);
+    if (spaces.includes(undefined)) return;
+
+    const uniqueSpaces = uniq(spaces);
+    if (uniqueSpaces.length === 1) return uniqueSpaces[0];
+  }) as Mark;
+
+  if (!winningMark) return O.none;
+
+  const player = winningMark === Mark.X ? playerOne : playerTwo;
+
+  return O.some(player);
+};
+
+const markSpace = (spaces: Spaces, currentPlayer: Player): IMarkSpace => (
+  index: number
+) =>
   pipe(
     index,
     validateUnoccupied(spaces),
     E.map(updateSpaces(spaces, currentPlayer))
   );
 
-const checkForWinner = (spaces: Spaces): O.Option<Player> => {
-  console.log({ spaces });
-  return O.none;
+const getNextPlayer = (
+  currentPlayer: Player,
+  spaces: Spaces
+): O.Option<Player> => {
+  if (!spaces.includes(undefined)) return O.none;
+  if (currentPlayer === playerOne) return O.some(playerTwo);
+  return O.some(playerOne);
+};
+
+const getStatus = (currentPlayer: Player): IGetStatus => (spaces: Spaces) => {
+  const winner = checkForWinner(spaces);
+  if (O.isSome(winner))
+    return { nextPlayer: undefined, spaces, winner: O.toUndefined(winner) };
+
+  const nextPlayer = getNextPlayer(currentPlayer, spaces);
+  return { nextPlayer: O.toUndefined(nextPlayer), spaces, winner: undefined };
 };
 
 const takeTurn = (
   index: number,
   spaces: Spaces,
   currentPlayer: Player
-): E.Either<Error, TakeTurnResult> => {
-  const result = markSpace(index, spaces, currentPlayer);
-
-  if (E.isLeft(result)) return E.left(result.left);
-
-  const { right: newSpaces } = result;
-
-  const winner = checkForWinner(newSpaces);
-  if (O.isSome(winner)) return E.right({ spaces: newSpaces });
-
-  const nextPlayer =
-    currentPlayer.mark === playerOne.mark ? playerTwo : playerOne;
-
-  return E.right({ spaces: result.right, nextPlayer });
-};
-
-function App() {
-  const [spaces, setSpaces] = useState<Spaces>(
-    new Array(9).fill(undefined) as Spaces
+): E.Either<Error, TakeTurnResult> =>
+  pipe(
+    index,
+    markSpace(spaces, currentPlayer),
+    E.map(getStatus(currentPlayer))
   );
 
-  const [currentPlayer, setCurrentPlayer] = useState<Player>(playerOne);
+const emptySpaces = new Array(9).fill(undefined) as Spaces;
+
+function App() {
+  const [spaces, setSpaces] = useState<Spaces>(emptySpaces);
+
+  const [currentPlayer, setCurrentPlayer] = useState<Player | undefined>(
+    playerOne
+  );
+  const [winner, setWinner] = useState<Player | undefined>();
+
+  const restart = () => {
+    setCurrentPlayer(playerOne);
+    setSpaces(emptySpaces);
+    setWinner(undefined);
+  };
 
   const setSpace = (index: number) => {
+    if (!currentPlayer) return;
+
     const result = takeTurn(index, spaces, currentPlayer);
 
     if (E.isLeft(result)) {
@@ -104,16 +163,22 @@ function App() {
       return;
     }
 
+    setCurrentPlayer(result.right.nextPlayer);
     setSpaces(result.right.spaces);
-
-    if (result.right.nextPlayer) setCurrentPlayer(result.right.nextPlayer);
+    setWinner(result.right.winner);
   };
 
   return (
     <Container>
       <GameContext.Provider value={{ spaces, setSpace }}>
         <Grid />
-        <Info>Player Turn: {currentPlayer.mark}</Info>
+        <Info>
+          {currentPlayer && `Player Turn: ${currentPlayer.mark}`}
+          {winner && `Winner: ${winner.mark}`}
+          <div>
+            <button onClick={restart}>Restart</button>
+          </div>
+        </Info>
       </GameContext.Provider>
     </Container>
   );

@@ -6,7 +6,7 @@ import SpaceComponent from "./Space";
 const StyledGrid = styled.div`
   display: grid;
   grid-template-columns: auto auto auto;
-  margin-top: 200px;
+  margin-top: 100px;
 `;
 
 export default function Grid() {

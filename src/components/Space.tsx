@@ -3,7 +3,11 @@ import styled from "styled-components";
 import { GameContext } from "../GameContext";
 import { Space } from "../types";
 
-const Box = styled.div`
+type BoxProps = {
+  available: boolean;
+};
+
+const Box = styled.div<BoxProps>`
   align-items: center;
   border: 1px solid black;
   display: flex;
@@ -11,6 +15,11 @@ const Box = styled.div`
   justify-content: center;
   user-select: none;
   width: 50px;
+
+  &:hover {
+    background-color: ${(props) =>
+      props.available ? "lightblue" : "transparent"};
+  }
 `;
 
 export default function SpaceComponent({
@@ -24,5 +33,9 @@ export default function SpaceComponent({
 
   const handleClick = () => setSpace(index);
 
-  return <Box onClick={handleClick}>{space}</Box>;
+  return (
+    <Box onClick={handleClick} available={!space}>
+      {space}
+    </Box>
+  );
 }
