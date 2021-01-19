@@ -48,10 +48,13 @@ const update = (board: Board, player: Player.Player) => (
 export const checkForWinner = (board: Board): O.Option<Player.Player> =>
   pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
 
+export const spacesRemain = (board: Board): boolean =>
+  board.spaces.map((s) => s.mark).includes(undefined);
+
 const checkEnoughMarks = O.fromPredicate((marks: Mark[]) => marks.length === 3);
 
-const checkAllMarksEqual = O.fromPredicate(
-  (marks: Mark[]) => A.uniq(eqString)(marks).length === 1
+const checkAllMarksEqual = O.fromPredicate((marks: Mark[]) =>
+  pipe(marks, A.uniq(eqString), (arr) => arr.length === 1)
 );
 
 const checkMarksForWinner = (marks: Mark[]): O.Option<Player.Player> =>
@@ -73,10 +76,11 @@ const checkForWinnerSingle = (board: Board) => (
 
 const validateUnoccupied = (board: Board) => (
   index: number
-): E.Either<Error, number> => {
-  const space = board.spaces[index];
-
-  return space.mark
-    ? E.left(new SpaceAlreadyOccupiedError(`Space ${index} already occupied!`))
-    : E.right(index);
-};
+): E.Either<Error, number> =>
+  pipe(
+    index,
+    E.fromPredicate(
+      (index) => !board.spaces[index].mark,
+      () => new SpaceAlreadyOccupiedError(`Space ${index} already occupied!`)
+    )
+  );

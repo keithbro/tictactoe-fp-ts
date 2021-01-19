@@ -8,7 +8,7 @@ import { Mark } from "../types";
 
 export type Game = {
   board: Board.Board;
-  currentPlayer?: Player.Player;
+  currentPlayer: O.Option<Player.Player>;
   playerOne: Player.Player;
   playerTwo: Player.Player;
   winner?: Player.Player;
@@ -20,7 +20,7 @@ export const build = (): Game => {
   const board = Board.build();
 
   return {
-    currentPlayer: playerOne,
+    currentPlayer: O.some(playerOne),
     playerOne,
     playerTwo,
     board,
@@ -31,44 +31,38 @@ export const takeTurn = (
   game: Game,
   index: number
 ): E.Either<Board.SpaceAlreadyOccupiedError, Game> => {
-  if (!game.currentPlayer) throw new Error();
+  if (O.isNone(game.currentPlayer)) throw new Error();
 
   return pipe(
     index,
-    Board.markSpace(game.board, game.currentPlayer),
+    Board.markSpace(game.board, game.currentPlayer.value),
     E.map(setupNewTurn(game))
   );
 };
 
-const getNextPlayer = (game: Game): O.Option<Player.Player> => {
-  if (!game.currentPlayer) return O.none;
+const togglePlayer = (game: Game) => (player: Player.Player): Player.Player =>
+  player.mark === Mark.X ? game.playerTwo : game.playerOne;
 
-  const { spaces } = game.board;
-
-  if (!spaces.map((s) => s.mark).includes(undefined)) return O.none;
-
-  return O.some(
-    game.currentPlayer.mark === Mark.X ? game.playerTwo : game.playerOne
+const getNextPlayer = (game: Game): O.Option<Player.Player> =>
+  pipe(
+    game.currentPlayer,
+    O.chain(O.fromPredicate(() => Board.spacesRemain(game.board))),
+    O.map(togglePlayer(game))
   );
-};
 
 const setupNewTurn = (game: Game) => (board: Board.Board): Game => {
-  const winner = Board.checkForWinner(board);
-
-  if (O.isSome(winner))
-    return {
-      ...game,
-      currentPlayer: undefined,
-      board,
-      winner: O.toUndefined(winner),
-    };
-
-  const nextPlayer = getNextPlayer(game);
-
-  return {
-    ...game,
-    currentPlayer: O.toUndefined(nextPlayer),
+  return pipe(
     board,
-    winner: undefined,
-  };
+    Board.checkForWinner,
+    O.fold<Player.Player, Game>(
+      () =>
+        pipe(game, getNextPlayer, (nextPlayer) => ({
+          ...game,
+          board,
+          currentPlayer: nextPlayer,
+          winner: undefined,
+        })),
+      (winner) => ({ ...game, board, currentPlayer: O.none, winner })
+    )
+  );
 };
