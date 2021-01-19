@@ -1,9 +1,9 @@
 import { createContext } from "react";
-import { Space } from "./types";
+import { Spaces } from "./core/Board";
 
 type ContextProps = {
-  setSpace: (index: number) => void;
-  spaces: Array<Space>;
+  takeTurn: (index: number) => void;
+  spaces: Spaces;
 };
 
 export const GameContext = createContext<ContextProps | undefined>(undefined);

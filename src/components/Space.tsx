@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import styled from "styled-components";
+import { Space } from "../core/Space";
 import { GameContext } from "../GameContext";
-import { Space } from "../types";
 
 type BoxProps = {
   available: boolean;
@@ -29,13 +29,13 @@ export default function SpaceComponent({
   space: Space;
   index: number;
 }) {
-  const { setSpace } = useContext(GameContext)!;
+  const { takeTurn } = useContext(GameContext)!;
 
-  const handleClick = () => setSpace(index);
+  const handleClick = () => takeTurn(index);
 
   return (
-    <Box onClick={handleClick} available={!space}>
-      {space}
+    <Box onClick={handleClick} available={!space.mark}>
+      {space.mark}
     </Box>
   );
 }
