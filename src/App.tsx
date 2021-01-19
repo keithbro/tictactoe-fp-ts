@@ -5,6 +5,7 @@ import * as E from "fp-ts/lib/Either";
 import Grid from "./components/Grid";
 import { GameContext } from "./GameContext";
 import * as Game from "./core/Game";
+import { pipe } from "fp-ts/lib/pipeable";
 
 const Container = styled.div`
   align-items: center;
@@ -28,14 +29,11 @@ function App() {
   const takeTurn = (index: number) => {
     if (!game.currentPlayer) return;
 
-    const result = Game.takeTurn(game, index);
-
-    if (E.isLeft(result)) {
-      console.warn(result.left.message);
-      return;
-    }
-
-    setGame(result.right);
+    pipe(
+      index,
+      (i) => Game.takeTurn(game, i),
+      E.fold(({ message }) => console.warn(message), setGame)
+    );
   };
 
   return (

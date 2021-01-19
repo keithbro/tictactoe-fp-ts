@@ -27,11 +27,15 @@ export const build = (): Game => {
   };
 };
 
-export const takeTurn = (game: Game, index: number): E.Either<Error, Game> => {
+export const takeTurn = (
+  game: Game,
+  index: number
+): E.Either<Board.SpaceAlreadyOccupiedError, Game> => {
   if (!game.currentPlayer) throw new Error();
+
   return pipe(
     index,
-    Board.markSpace(game.board, game.currentPlayer), // returns new board
+    Board.markSpace(game.board, game.currentPlayer),
     E.map(setupNewTurn(game))
   );
 };

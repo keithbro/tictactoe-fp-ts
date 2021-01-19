@@ -4,36 +4,25 @@ import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import { eqString } from "fp-ts/lib/Eq";
 
-import { Player } from "./Player";
+import * as Player from "./Player";
 import * as Space from "./Space";
 import { Mark } from "../types";
 
-export type Spaces = [
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space,
-  Space.Space
-];
-
 export type Board = {
-  spaces: Spaces;
+  spaces: Space.Space[];
 };
 
 export const build = () => ({
-  spaces: A.makeBy(9, () => Space.build()) as Spaces,
+  spaces: A.makeBy(9, () => Space.build()),
 });
 
-class SpaceAlreadyOccupiedError extends Error {}
+export class OutOfBoundsError extends Error {}
+export class SpaceAlreadyOccupiedError extends Error {}
 
-export const markSpace = (board: Board, player: Player) => (
+export const markSpace = (board: Board, player: Player.Player) => (
   index: number
 ): E.Either<Error, Board> =>
-  pipe(index, validateUnoccupied(board), E.map(update(board, player)));
+  pipe(index, validateUnoccupied(board), E.chain(update(board, player)));
 
 const allWinningIndices = [
   [0, 1, 2],
@@ -46,37 +35,41 @@ const allWinningIndices = [
   [6, 7, 8],
 ];
 
-const update = (board: Board, player: Player) => (index: number): Board => {
-  return {
-    spaces: [
-      ...board.spaces.slice(0, index),
-      Space.build(player.mark),
-      ...board.spaces.slice(index + 1),
-    ] as Spaces,
-  };
-};
+const update = (board: Board, player: Player.Player) => (
+  index: number
+): E.Either<Error, Board> =>
+  pipe(
+    board.spaces,
+    A.updateAt(index, Space.build(player.mark)),
+    E.fromOption(() => new OutOfBoundsError()),
+    E.map((spaces) => ({ spaces }))
+  );
 
-export const checkForWinner = (board: Board): O.Option<Player> =>
+export const checkForWinner = (board: Board): O.Option<Player.Player> =>
   pipe(allWinningIndices, A.findFirstMap(checkForWinnerSingle(board)));
 
-const checkMarksForWinner = (marks: Mark[]): O.Option<Player> => {
-  if (marksPresent(marks) === 3 && allMarksEqual(marks))
-    return O.some({ mark: marks[0] });
+const checkEnoughMarks = O.fromPredicate((marks: Mark[]) => marks.length === 3);
 
-  return O.none;
-};
+const checkAllMarksEqual = O.fromPredicate(
+  (marks: Mark[]) => A.uniq(eqString)(marks).length === 1
+);
+
+const checkMarksForWinner = (marks: Mark[]): O.Option<Player.Player> =>
+  pipe(
+    marks,
+    checkEnoughMarks,
+    O.chain(checkAllMarksEqual),
+    O.chain(A.head),
+    O.map(Player.build)
+  );
 
 const getMarks = (board: Board) =>
   A.filterMap<number, Mark>((i) => O.fromNullable(board.spaces[i].mark));
 
-const marksPresent = (marks: Mark[]): number => marks.length;
-
-const allMarksEqual = (marks: Mark[]): boolean =>
-  A.uniq(eqString)(marks).length === 1;
-
 const checkForWinnerSingle = (board: Board) => (
   indicies: number[]
-): O.Option<Player> => pipe(indicies, getMarks(board), checkMarksForWinner);
+): O.Option<Player.Player> =>
+  pipe(indicies, getMarks(board), checkMarksForWinner);
 
 const validateUnoccupied = (board: Board) => (
   index: number

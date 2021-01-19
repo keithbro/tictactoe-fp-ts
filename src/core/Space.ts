@@ -4,4 +4,4 @@ export type Space = {
   mark?: Mark;
 };
 
-export const build = (mark?: Mark) => ({ mark });
+export const build = (mark?: Mark): Space => ({ mark });

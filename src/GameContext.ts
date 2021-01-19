@@ -1,9 +1,9 @@
 import { createContext } from "react";
-import { Spaces } from "./core/Board";
+import { Space } from "./core/Space";
 
 type ContextProps = {
   takeTurn: (index: number) => void;
-  spaces: Spaces;
+  spaces: Space[];
 };
 
 export const GameContext = createContext<ContextProps | undefined>(undefined);
